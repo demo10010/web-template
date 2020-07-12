@@ -16,11 +16,17 @@ import javax.validation.Valid;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.RandomAccess;
+import java.util.concurrent.*;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 @RestController("/demo")
 @Api(description = "controller上的描述信息")
 public class DemoController {
+    private static final String ZSET_KEY = "zset";
+
+    private ExecutorService executorService = Executors.newWorkStealingPool(Runtime.getRuntime().availableProcessors());
 
     @Autowired
     private JedisPool jedisPool;
@@ -54,5 +60,55 @@ public class DemoController {
     public String post(@ApiParam(value = "查询条件", required = true) @RequestBody @Valid QueryQo queryQo) {
         String json = new Gson().toJson(queryQo);
         return "restful 【POST】 method with parameter :" + json;
+    }
+
+
+    @ApiOperation(value = "zset zincrby请求")
+    @GetMapping("/add/{count}")
+    public String zsetTest(@PathVariable("count") int count) {
+//        Jedis resource = jedisPool.getResource();
+//        Double aDouble = resource.zincrby(ZSET_KEY, score, "ip" + score % 3);
+//        resource.close();
+
+        testConcurrent(count);
+        return " result : ";
+    }
+
+    private void testConcurrent(int endExclusive) {
+        //提交500个并发线程
+        CompletableFuture[] futures = new CompletableFuture[endExclusive];
+        IntStream.range(0, endExclusive)
+                .forEach(i -> futures[i] = CompletableFuture.supplyAsync(this::supplyMethod, executorService));
+
+        CompletableFuture.allOf(futures).join();
+        System.out.println("testConcurrent end !");
+    }
+
+    class RedisTest implements Callable {
+        @Override
+        public Object call() throws Exception {
+            return supplyMethod();
+        }
+    }
+
+    private String supplyMethod() {
+        IntStream.range(0, 1000).forEach(score -> {
+            Jedis resource = jedisPool.getResource();
+            resource.zincrby(ZSET_KEY, score, "ip" + score % 3);
+            resource.close();
+        });
+        Jedis resource = jedisPool.getResource();
+        Long zcard = resource.zcard(ZSET_KEY);
+        resource.close();
+        return " result : " + zcard;
+    }
+
+    @ApiOperation(value = "zrem请求")
+    @GetMapping("/zrem/{score}")
+    public String zremTest(@PathVariable("score") Long score) {
+        Jedis resource = jedisPool.getResource();
+        //返回值 1 删除成功 0 删除失败(不存在)
+        Long zset = resource.zrem("zset", "ip" + score % 3);
+        return " result : " + zset;
     }
 }

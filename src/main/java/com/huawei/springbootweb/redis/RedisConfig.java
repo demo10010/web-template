@@ -4,18 +4,12 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
-import org.redisson.Redisson;
-import org.redisson.api.RMap;
-import org.redisson.api.RedissonClient;
-import org.redisson.config.Config;
-import org.redisson.spring.data.connection.RedissonConnectionFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.context.support.PropertySourcesPlaceholderConfigurer;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.data.redis.cache.RedisCacheManager;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
@@ -27,8 +21,6 @@ import org.springframework.data.redis.serializer.RedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
-
-import java.io.IOException;
 
 /**
  * 基于注解加载配置文件
@@ -124,28 +116,28 @@ public class RedisConfig {
         return jedisPool;
     }
 
-    @Bean
-    public RedissonClient redissonClient() {
-        Config config = new Config();
-        config.useSingleServer().setAddress("127.0.0.1:6379");
-        RedissonClient redisson = Redisson.create(config);
-
-        RMap<String, String> test = redisson.getMap("test");
-        String value = test.get("key");
-        return redisson;
-    }
-
-    @Bean
-    public RedissonClient redisson() throws IOException {
-        Config config = Config.fromYAML(new ClassPathResource("redisson.yml").getInputStream());
-        RedissonClient redisson = Redisson.create(config);
-        return redisson;
-    }
-
-    @Bean
-    public RedissonConnectionFactory redissonConnectionFactory(RedissonClient redisson) {
-        return new RedissonConnectionFactory(redisson);
-    }
+//    @Bean
+//    public RedissonClient redissonClient() {
+//        Config config = new Config();
+//        config.useSingleServer().setAddress("127.0.0.1:6379");
+//        RedissonClient redisson = Redisson.create(config);
+//
+//        RMap<String, String> test = redisson.getMap("test");
+//        String value = test.get("key");
+//        return redisson;
+//    }
+//
+//    @Bean
+//    public RedissonClient redisson() throws IOException {
+//        Config config = Config.fromYAML(new ClassPathResource("redisson.yml").getInputStream());
+//        RedissonClient redisson = Redisson.create(config);
+//        return redisson;
+//    }
+//
+//    @Bean
+//    public RedissonConnectionFactory redissonConnectionFactory(RedissonClient redisson) {
+//        return new RedissonConnectionFactory(redisson);
+//    }
 
     @Bean("redisTemplate")
     public RedisTemplate getRedisTemplate(RedisConnectionFactory redissonConnectionFactory) {
